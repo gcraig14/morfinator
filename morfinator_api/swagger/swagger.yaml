@@ -1,0 +1,655 @@
+---
+swagger: "2.0"
+info:
+  description: "API for weekly meal generator app."
+  version: "1.0.0"
+  title: "The Morfinator"
+  contact:
+    email: "giscraig@gmail.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "127.0.0.1"
+basePath: "/v1"
+tags:
+- name: "user"
+  description: "Operations about user"
+- name: "meal"
+  description: "Handle meals"
+- name: "usermeals"
+  description: "Handle relationships between user and meals"
+- name: "usershoplist"
+  description: "Handle relationships between user and ingredients"
+- name: "mealingredients"
+  description: "Handle relationships between meal and ingredients"
+schemes:
+- "https"
+- "http"
+paths:
+  /user:
+    post:
+      tags:
+      - "user"
+      summary: "Create user"
+      description: "This can only be done by the logged in user."
+      operationId: "create_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Created user object"
+        required: true
+        schema:
+          $ref: "#/definitions/User"
+      responses:
+        default:
+          description: "successful operation"
+      x-swagger-router-controller: "morfinator_api.controllers.user_controller"
+  /user/login:
+    get:
+      tags:
+      - "user"
+      summary: "Logs user into the system"
+      description: ""
+      operationId: "login_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "username"
+        in: "query"
+        description: "The user name for login"
+        required: true
+        type: "string"
+      - name: "password"
+        in: "query"
+        description: "The password for login in clear text"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          headers:
+            X-Rate-Limit:
+              type: "integer"
+              format: "int32"
+              description: "calls per hour allowed by the user"
+            X-Expires-After:
+              type: "string"
+              format: "date-time"
+              description: "date in UTC when token expires"
+          schema:
+            type: "string"
+        "400":
+          description: "Invalid username/password supplied"
+      x-swagger-router-controller: "morfinator_api.controllers.user_controller"
+  /user/logout:
+    get:
+      tags:
+      - "user"
+      summary: "Logs out current logged in user session"
+      description: ""
+      operationId: "logout_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters: []
+      responses:
+        default:
+          description: "successful operation"
+      x-swagger-router-controller: "morfinator_api.controllers.user_controller"
+  /user/{username}:
+    get:
+      tags:
+      - "user"
+      summary: "Get user by user name"
+      description: ""
+      operationId: "get_user_by_name"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "The name that needs to be fetched. Use user1 for testing. "
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/User"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.user_controller"
+    put:
+      tags:
+      - "user"
+      summary: "Updated user"
+      description: "This can only be done by the logged in user."
+      operationId: "update_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "name that need to be updated"
+        required: true
+        type: "string"
+      - in: "body"
+        name: "body"
+        description: "Update user object"
+        required: true
+        schema:
+          $ref: "#/definitions/User"
+      responses:
+        "400":
+          description: "Invalid user supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.user_controller"
+    delete:
+      tags:
+      - "user"
+      summary: "Delete user"
+      description: "This can only be done by the logged in user."
+      operationId: "delete_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "The name that needs to be deleted"
+        required: true
+        type: "string"
+      responses:
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.user_controller"
+  /meal:
+    post:
+      tags:
+      - "meal"
+      summary: "Add a new meal to the db"
+      description: ""
+      operationId: "add_meal"
+      consumes:
+      - "application/json"
+      - "application/xml"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Meal object that needs to be added to the store"
+        required: true
+        schema:
+          $ref: "#/definitions/Meal"
+      security:
+      - morfinator_auth:
+        - "write:meals"
+        - "read:meals"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "405":
+          description: "Invalid input"
+      x-swagger-router-controller: "morfinator_api.controllers.meal_controller"
+  /meal/{id}:
+    put:
+      tags:
+      - "meal"
+      summary: "Update an existing meal"
+      description: ""
+      operationId: "update_meal"
+      consumes:
+      - "application/json"
+      - "application/xml"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Meal object that needs to be added"
+        required: true
+        schema:
+          $ref: "#/definitions/Meal"
+      - name: "id"
+        in: "path"
+        description: "The id that needs to be fetched."
+        required: true
+        type: "integer"
+      security:
+      - morfinator_auth:
+        - "write:meals"
+        - "read:meals"
+      responses:
+        "400":
+          description: "Invalid ID supplied"
+        "404":
+          description: "Meal not found"
+        "405":
+          description: "Validation exception"
+      x-swagger-router-controller: "morfinator_api.controllers.meal_controller"
+    delete:
+      tags:
+      - "meal"
+      summary: "Remove meal from the db"
+      description: ""
+      operationId: "delete_meal"
+      consumes:
+      - "application/json"
+      - "application/xml"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Meal object that needs to be added to the store"
+        required: true
+        schema:
+          $ref: "#/definitions/Meal"
+      - name: "id"
+        in: "path"
+        description: "The id that needs to be fetched."
+        required: true
+        type: "integer"
+      security:
+      - morfinator_auth:
+        - "write:meals"
+        - "read:meals"
+      responses:
+        "405":
+          description: "Invalid input"
+      x-swagger-router-controller: "morfinator_api.controllers.meal_controller"
+  /usermeals/{user_id}:
+    get:
+      tags:
+      - "usermeals"
+      summary: "Get meals for user"
+      description: ""
+      operationId: "get_meals_for_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "The name that needs to be fetched. Use user1 for testing. "
+        required: true
+        type: "integer"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserMeals"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usermeals_controller"
+    post:
+      tags:
+      - "usermeals"
+      summary: "Add new meal to user"
+      description: ""
+      operationId: "add_meal_for_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "The name that needs to be fetched. Use user1 for testing. "
+        required: true
+        type: "integer"
+      - in: "body"
+        name: "body"
+        description: "Meal object that needs to be added to this user"
+        required: true
+        schema:
+          $ref: "#/definitions/UserMeals"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserMeals"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usermeals_controller"
+    delete:
+      tags:
+      - "usermeals"
+      summary: "Delete meal for user"
+      description: ""
+      operationId: "update_meals_for_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "The name that needs to be fetched. Use user1 for testing. "
+        required: true
+        type: "integer"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserMeals"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usermeals_controller"
+  /usershoplist/{user_id}:
+    get:
+      tags:
+      - "usershoplist"
+      summary: "Get ingredients for user"
+      description: ""
+      operationId: "get_shop_list"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "The name that needs to be fetched. Use user1 for testing. "
+        required: true
+        type: "integer"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserShopList"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usershoplist_controller"
+  /usershoplist/:
+    post:
+      tags:
+      - "usershoplist"
+      summary: "Add new ingredient to user"
+      description: ""
+      operationId: "add_ingredient_for_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "ingredient"
+        description: "Ingredient that needs to be added to this user's shoplist"
+        required: true
+        schema:
+          $ref: "#/definitions/UserShopList"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserShopList"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usershoplist_controller"
+    put:
+      tags:
+      - "usershoplist"
+      summary: "Modify user's ingredient"
+      description: ""
+      operationId: "updategredient_for_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "ingredient"
+        description: "Ingredient that needs to be modified on this user's shoplist"
+        required: true
+        schema:
+          $ref: "#/definitions/UserShopList"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserShopList"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usershoplist_controller"
+    delete:
+      tags:
+      - "usershoplist"
+      summary: "Delete ingredient for user"
+      description: ""
+      operationId: "delete_ingredient_for_user"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "ingredient"
+        description: "Ingredient that needs to be removed from this user's shoplist"
+        required: true
+        schema:
+          $ref: "#/definitions/UserShopList"
+      responses:
+        "200":
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/UserShopList"
+        "400":
+          description: "Invalid username supplied"
+        "404":
+          description: "User not found"
+      x-swagger-router-controller: "morfinator_api.controllers.usershoplist_controller"
+securityDefinitions:
+  morfinator_auth:
+    type: "oauth2"
+    authorizationUrl: "https://www.morfinator.com/oauth/dialog"
+    flow: "implicit"
+    scopes:
+      write:meals: "modify meals in your account"
+      read:meals: "read your meals"
+    x-tokenInfoFunc: "morfinator_api.controllers.authorization_controller.check_morfinator_auth"
+    x-scopeValidateFunc: "morfinator_api.controllers.authorization_controller.validate_scope_morfinator_auth"
+  api_key:
+    type: "apiKey"
+    name: "api_key"
+    in: "header"
+    x-apikeyInfoFunc: "morfinator_api.controllers.authorization_controller.check_api_key"
+definitions:
+  User:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+      email:
+        type: "string"
+      password:
+        type: "string"
+    xml:
+      name: "User"
+    example:
+      password: "password"
+      id: 0
+      email: "email"
+  Meal:
+    type: "object"
+    required:
+    - "dish_type"
+    - "food_type"
+    - "image"
+    - "name"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+      name:
+        type: "string"
+        example: "Hamburguesas"
+      food_type:
+        type: "string"
+        example: "Almuerzo"
+      dish_type:
+        type: "string"
+        description: "Tipo de plato"
+        enum:
+        - "desayuno"
+        - "almuerzo"
+        - "merienda"
+        - "cena"
+      image:
+        type: "string"
+      ingredients:
+        $ref: "#/definitions/Ingredient"
+      recipe:
+        type: "string"
+      difficulty:
+        type: "integer"
+        format: "int64"
+      time:
+        type: "integer"
+      tags:
+        type: "array"
+        xml:
+          name: "tag"
+          wrapped: true
+        items:
+          type: "string"
+    xml:
+      name: "Meal"
+    example:
+      difficulty: 1
+      image: "image"
+      dish_type: "desayuno"
+      name: "Hamburguesas"
+      recipe: "recipe"
+      ingredients:
+        name: "Tomate"
+        id: 6
+        type: "Verdura"
+      id: 0
+      food_type: "Almuerzo"
+      time: 5
+      tags:
+      - "tags"
+      - "tags"
+  Ingredient:
+    type: "object"
+    required:
+    - "name"
+    - "type"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+      name:
+        type: "string"
+        example: "Tomate"
+      type:
+        type: "string"
+        example: "Verdura"
+    xml:
+      name: "Ingredients"
+    example:
+      name: "Tomate"
+      id: 6
+      type: "Verdura"
+  UserMeals:
+    type: "object"
+    properties:
+      user_id:
+        type: "integer"
+      meals:
+        type: "array"
+        items:
+          $ref: "#/definitions/Meal"
+    example:
+      user_id: 0
+      meals:
+      - difficulty: 1
+        image: "image"
+        dish_type: "desayuno"
+        name: "Hamburguesas"
+        recipe: "recipe"
+        ingredients:
+          name: "Tomate"
+          id: 6
+          type: "Verdura"
+        id: 0
+        food_type: "Almuerzo"
+        time: 5
+        tags:
+        - "tags"
+        - "tags"
+      - difficulty: 1
+        image: "image"
+        dish_type: "desayuno"
+        name: "Hamburguesas"
+        recipe: "recipe"
+        ingredients:
+          name: "Tomate"
+          id: 6
+          type: "Verdura"
+        id: 0
+        food_type: "Almuerzo"
+        time: 5
+        tags:
+        - "tags"
+        - "tags"
+  UserShopList:
+    type: "object"
+    required:
+    - "user_id"
+    properties:
+      user_id:
+        type: "integer"
+      ingredient:
+        $ref: "#/definitions/Ingredient"
+      in_stock:
+        type: "boolean"
+    example:
+      ingredient:
+        name: "Tomate"
+        id: 6
+        type: "Verdura"
+      user_id: 0
+      in_stock: true
+  ApiResponse:
+    type: "object"
+    properties:
+      code:
+        type: "integer"
+        format: "int32"
+      type:
+        type: "string"
+      message:
+        type: "string"
+    example:
+      code: 0
+      type: "type"
+      message: "message"
+externalDocs:
+  description: "Find out more about Swagger"
+  url: "http://swagger.io"
